@@ -10,12 +10,20 @@
 namespace PWCC\Helpers;
 
 /**
+ * Fast Bootstrap helpers.
+ *
+ * Runs as the plugin is loaded.
+ */
+function fast_bootstrap() {
+	add_filter( 'backwpup_register_destination', __NAMESPACE__ . '//remove_s3_conflict' );
+}
+
+/**
  * Bootstrap helpers.
  *
  * Runs on the `plugins_loaded` hook.
  */
 function bootstrap() {
-	add_filter( 'backwpup_register_destination', __NAMESPACE__ . '//remove_s3_conflict' );
 }
 
 /**

@@ -22,4 +22,5 @@ namespace PWCC\Helpers;
 
 require_once __DIR__ . '/inc/namespace.php';
 
+fast_bootstrap();
 add_action( 'plugins_loaded', __NAMESPACE__ . '\\bootstrap' );
