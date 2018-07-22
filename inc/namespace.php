@@ -15,7 +15,7 @@ namespace PWCC\Helpers;
  * Runs as the plugin is loaded.
  */
 function fast_bootstrap() {
-	add_filter( 'backwpup_register_destination', __NAMESPACE__ . '//remove_s3_conflict' );
+	add_filter( 'backwpup_register_destination', __NAMESPACE__ . '\\remove_s3_conflict' );
 }
 
 /**
@@ -25,7 +25,7 @@ function fast_bootstrap() {
  */
 function bootstrap() {
 	// Do not resize on uploads, we use Tachyon.
-	add_filter( 'intermediate_image_sizes_advanced', __return_empty_array() );
+	add_filter( 'intermediate_image_sizes_advanced', '__return_empty_array' );
 }
 
 /**
