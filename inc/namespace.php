@@ -26,7 +26,6 @@ function fast_bootstrap() {
 function bootstrap() {
 	// Do not resize on uploads, we use Tachyon.
 	add_filter( 'intermediate_image_sizes_advanced', __NAMESPACE__ . '\\intermediate_image_sizes' );
-	add_filter( 'twentyfourteen_attachment_size', __NAMESPACE__ . '\\twentyfourteen_attachment_size' );
 }
 
 /**
@@ -65,20 +64,4 @@ function remove_s3_conflict( $registered_destinations ) {
  */
 function intermediate_image_sizes( $sizes ) {
 	return $sizes;
-}
-
-/**
- * Replace the default display size for attachemnts in 2014.
- *
- * This is to work around a Tachyon bug in which images can be
- * displayed at 1x1 if the original image is smaller than the
- * requested numeric dimensions.
- *
- * Runs on the filter `twentyfourteen_attachment_size`.
- * @param array $size
- * @return string
- */
-function twentyfourteen_attachment_size( $size ) {
-
-	return 'large';
 }
