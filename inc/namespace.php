@@ -24,6 +24,8 @@ function fast_bootstrap() {
  * Runs on the `plugins_loaded` hook.
  */
 function bootstrap() {
+	JetpackFixes\bootstrap();
+
 	// Do not resize on uploads, we use Tachyon.
 	add_filter( 'intermediate_image_sizes_advanced', __NAMESPACE__ . '\\intermediate_image_sizes' );
 }

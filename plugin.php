@@ -21,6 +21,7 @@
 namespace PWCC\Helpers;
 
 require_once __DIR__ . '/inc/namespace.php';
+require_once __DIR__ . '/inc/jetpack-fixes/namespace.php';
 
 fast_bootstrap();
 add_action( 'plugins_loaded', __NAMESPACE__ . '\\bootstrap' );
