@@ -28,7 +28,7 @@ function bootstrap() {
  * @param bool $do_implode Initial decision to implode/not implode CSS.
  * @return bool Whether to implode CSS.
  */
-function maybe_implode_css( bool $do_implode ) {
+function maybe_implode_css( $do_implode ) {
 	if ( ! $do_implode ) {
 		// It's already been decided not to implode.
 		return $do_implode;
