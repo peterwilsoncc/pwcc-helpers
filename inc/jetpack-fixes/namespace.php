@@ -23,6 +23,22 @@ function bootstrap() {
 /**
  * Use a bit of smarts to determine if Jetpack CSS should be imploded.
  *
+ * Jetpack will include its concatenated CSS file on every page of a site,
+ * regardless of the number of files enqueued by modules.
+ *
+ * If no front-end modules are enabled, this results in a 30K of unused
+ * CSS being included in the HTML header.
+ *
+ * If one module front-end module is enabled, the smaller file is removed
+ * and a larger file loaded in its place.
+ *
+ * This function only allows the concatenated file to be enqueued if two or
+ * more front-end modules are loaded. The use of HTTP/2 could be detected and
+ * concatenation disabled if it's in use but the performance affects of this
+ * need to be measured and I am on holiday.
+ *
+ * @todo Determine if HTTP2 traffic should always use the separate CSS files.
+ *
  * Runs on the filter `jetpack_implode_frontend_css`.
  *
  * @param bool $do_implode Initial decision to implode/not implode CSS.
