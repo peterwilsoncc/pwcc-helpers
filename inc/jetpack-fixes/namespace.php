@@ -44,10 +44,11 @@ function maybe_implode_css( $do_implode ) {
 		}
 
 		if ( $enqueued_count >= 2 ) {
-			// Two or more files enqueued, no further checks required.
-			break;
+			// Two or more files enqueued, implode.
+			return $do_implode;
 		}
 	}
 
-	return $enqueued_count >= 2 ? $do_implode : false;
+	// Zero or one file enqueued. Do not implode.
+	return false;
 }
