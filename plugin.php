@@ -11,7 +11,7 @@
  * Plugin Name: PWCC Helpers.
  * Plugin URI:  https://peterwilson.cc/
  * Description: Various bits that help me.
- * Version:     1.0.0
+ * Version:     %%VERSION%%
  * Author:      Peter Wilson
  * Author URI:  https://peterwilson.cc/
  * Text Domain: pwcc-notes
