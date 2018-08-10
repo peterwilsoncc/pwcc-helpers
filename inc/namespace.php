@@ -26,10 +26,10 @@ function fast_bootstrap() {
 function bootstrap() {
 	JetpackFixes\bootstrap();
 
-	// Do not resize on uploads, we use Tachyon.
-	add_filter( 'intermediate_image_sizes_advanced', __NAMESPACE__ . '\\intermediate_image_sizes' );
 	// Use Tachyon in the admin.
 	add_filter( 'tachyon_disable_in_admin', '__return_false' );
+	// No need to resize on upload due to use in admin.
+	add_filter( 'intermediate_image_sizes_advanced', '__return_empty_array' );
 }
 
 /**
@@ -48,24 +48,4 @@ function remove_s3_conflict( $registered_destinations ) {
 	unset( $registered_destinations['S3'] );
 
 	return $registered_destinations;
-}
-
-/**
- * Filter resize values for image uploads.
- *
- * This can be used to modify the values to resize images
- * to on uploads.
- *
- * @todo see if I can use Tachyon URLs in admin.
- *
- * Once the site uses Tachyon URLs in the admin this can
- * be changed to return an empty array. Until then it does nothing.
- *
- * Runs on the filter `intermediate_image_sizes_advanced`.
- *
- * @param array $sizes
- * @return array
- */
-function intermediate_image_sizes( $sizes ) {
-	return $sizes;
 }
