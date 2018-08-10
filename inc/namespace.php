@@ -28,6 +28,8 @@ function bootstrap() {
 
 	// Do not resize on uploads, we use Tachyon.
 	add_filter( 'intermediate_image_sizes_advanced', __NAMESPACE__ . '\\intermediate_image_sizes' );
+	// Use Tachyon in the admin.
+	add_filter( 'tachyon_disable_in_admin', '__return_false' );
 }
 
 /**
