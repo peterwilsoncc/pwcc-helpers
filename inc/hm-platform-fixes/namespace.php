@@ -16,7 +16,7 @@ namespace PWCC\Helpers\HmPlatformFixes;
  */
 function fast_bootstrap() {
 	// Runs late to ensure it runs after Cavalcade filters the option.
-	add_filter( 'pre_option_cron',        __NAMESPACE__ . '\\get_cron_array', 20 );
+	add_filter( 'pre_option_cron', __NAMESPACE__ . '\\get_cron_array', 20 );
 }
 
 /**
@@ -33,7 +33,7 @@ function get_cron_array( $crons ) {
 		return $crons;
 	}
 
-	$schedules = array();
+	$schedules = [];
 	foreach ( wp_get_schedules() as $name => $schedule ) {
 		$schedules[ $name ] = $schedule['interval'];
 	}
