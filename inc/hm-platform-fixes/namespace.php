@@ -17,6 +17,15 @@ namespace PWCC\Helpers\HmPlatformFixes;
 function fast_bootstrap() {
 	// Runs late to ensure it runs after Cavalcade filters the option.
 	add_filter( 'pre_option_cron', __NAMESPACE__ . '\\get_cron_array', 20 );
+
+	/*
+	 * Filter Jetpack Schedules to avoid schedule name collisions.
+	 *
+	 * This could be in Jetpack fixes but the cause is Cavalcade so it
+	 * is going here.
+	 */
+	add_filter( 'jetpack_sync_incremental_sync_interval', __NAMESPACE__ . '\\jetpack_sync_incremental_sync_interval' );
+	add_filter( 'jetpack_sync_full_sync_interval', __NAMESPACE__ . '\\jetpack_sync_full_sync_interval' );
 }
 
 /**
@@ -61,4 +70,24 @@ function get_cron_array( $crons ) {
 		}
 	}
 	return $crons;
+}
+
+/**
+ * Override the default incremental sync schedule for Jetpack.
+ *
+ * @param string $schedule_name The schedule name.
+ * @return string The modified schedule (hourly).
+ */
+function jetpack_sync_incremental_sync_interval( $schedule_name ) {
+	return 'hourly';
+}
+
+/**
+ * Override the default full sync schedule for Jetpack.
+ *
+ * @param string $schedule_name The schedule name.
+ * @return string The modified schedule (twice each day).
+ */
+function jetpack_sync_full_sync_interval( $schedule_name ) {
+	return 'twicedaily';
 }
