@@ -51,6 +51,7 @@ function get_cron_array( $crons ) {
 					continue;
 				}
 
+				// @codingStandardsIgnoreLine
 				$schedule = array_search( $event['interval'], $schedules );
 				if ( ! $schedule ) {
 					$schedule = '__fake_schedule';
