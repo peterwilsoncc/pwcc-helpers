@@ -53,7 +53,7 @@ function get_cron_array( $crons ) {
 		}
 		foreach ( $cronhooks as $hook => $args ) {
 			foreach ( $args as $key => $event ) {
-				if ( ! isset( $event['schedule'] ) ) {
+				if ( ! isset( $event['schedule'] ) || ! isset( $event['interval'] ) ) {
 					continue;
 				}
 				if ( $event['schedule'] !== '__fake_schedule' ) {
