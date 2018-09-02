@@ -28,6 +28,7 @@ function fast_bootstrap() {
  */
 function bootstrap() {
 	JetpackFixes\bootstrap();
+	CavalcadeMods\bootstrap();
 
 	// Use Tachyon in the admin.
 	add_filter( 'tachyon_disable_in_admin', '__return_false' );
