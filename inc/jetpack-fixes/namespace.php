@@ -12,12 +12,49 @@ namespace PWCC\Helpers\JetpackFixes;
 use Jetpack;
 
 /**
+ * Fast boostrap for Jetpack fixes.
+ *
+ * Runs as the plugin is included.
+ */
+function fast_bootstrap() {
+	/*
+	 * Filter Jetpack Schedules run less frequently.
+	 *
+	 * By default JP runs both a full and incremental sync
+	 * every five minutes. This slows them down to hourly and
+	 * every twelve hours respectively.
+	 */
+	add_filter( 'jetpack_sync_incremental_sync_interval', __NAMESPACE__ . '\\jetpack_sync_incremental_sync_interval' );
+	add_filter( 'jetpack_sync_full_sync_interval', __NAMESPACE__ . '\\jetpack_sync_full_sync_interval' );
+}
+
+/**
  * Bootstrap Jetpack Fixes.
  *
  * Runs on the `plugins_loaded` hook.
  */
 function bootstrap() {
 	add_filter( 'jetpack_implode_frontend_css', __NAMESPACE__ . '\\maybe_implode_css' );
+}
+
+/**
+ * Override the default incremental sync schedule for Jetpack.
+ *
+ * @param string $schedule_name The schedule name.
+ * @return string The modified schedule (hourly).
+ */
+function jetpack_sync_incremental_sync_interval( $schedule_name ) {
+	return 'hourly';
+}
+
+/**
+ * Override the default full sync schedule for Jetpack.
+ *
+ * @param string $schedule_name The schedule name.
+ * @return string The modified schedule (twice each day).
+ */
+function jetpack_sync_full_sync_interval( $schedule_name ) {
+	return 'twicedaily';
 }
 
 /**
