@@ -22,8 +22,7 @@ function bootstrap() {
 		return;
 	}
 
-	// Use Tachyon in the admin.
+	// Use Tachyon in the admin, avoid resize on upload.
 	add_filter( 'tachyon_disable_in_admin', '__return_false' );
-	// No need to resize on upload due to use in admin.
 	add_filter( 'intermediate_image_sizes_advanced', '__return_empty_array' );
 }
