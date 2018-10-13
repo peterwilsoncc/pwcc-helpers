@@ -29,11 +29,7 @@ function fast_bootstrap() {
 function bootstrap() {
 	JetpackFixes\bootstrap();
 	CavalcadeMods\bootstrap();
-
-	// Use Tachyon in the admin.
-	add_filter( 'tachyon_disable_in_admin', '__return_false' );
-	// No need to resize on upload due to use in admin.
-	add_filter( 'intermediate_image_sizes_advanced', '__return_empty_array' );
+	TachyonMods\bootstrap();
 }
 
 /**
