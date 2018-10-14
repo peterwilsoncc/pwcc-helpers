@@ -25,6 +25,9 @@ function bootstrap() {
 	// Use Tachyon in the admin, avoid resize on upload.
 	add_filter( 'tachyon_disable_in_admin', '__return_false' );
 	add_filter( 'intermediate_image_sizes_advanced', '__return_empty_array' );
+
+	// Fake the image meta data.
+	add_filter( 'wp_get_attachment_metadata', __NAMESPACE__ . '\\filter_attachment_meta_data', 10, 2 );
 }
 
 /**
@@ -93,4 +96,83 @@ function image_sizes() {
 	}
 
 	return $image_sizes;
+}
+
+/**
+ * Fake attachment meta data to include all image sizes.
+ *
+ * This attempts to fix two issues:
+ *  - "new" image sizes are not included in meta data.
+ *  - when using Tachyon in admin and disabling resizing,
+ *    NO image sizes are included in the meta data.
+ *
+ * @param $data          array The original attachment meta data.
+ * @param $attachment_id int The attachment ID.
+ *
+ * @return array The modified attachment data including "new" image sizes.
+ */
+function filter_attachment_meta_data( $data, $attachment_id ) {
+	// Only modify if valid format and for images.
+	if ( ! is_array( $data ) || ! wp_attachment_is_image( $attachment_id ) ) {
+		return $data;
+	}
+
+	// Full size image info.
+	$image_sizes = image_sizes();
+	$mime_type = get_post_mime_type( $attachment_id );
+	$filename = pathinfo( $data['file'], PATHINFO_FILENAME );
+	$ext = pathinfo( $data['file'], PATHINFO_EXTENSION );
+	$orig_w = $data['width'];
+	$orig_h = $data['height'];
+
+	foreach ( $image_sizes as $size => $crop ) {
+		if ( isset( $data['sizes'][ $size ] ) ) {
+			// Meta data is set.
+			continue;
+		}
+		if ( 'full' === $size ) {
+			// Full is a special case.
+			continue;
+		}
+		$new_dims = image_resize_dimensions( $orig_w, $orig_h, $crop['width'], $crop['height'], $crop['crop'] );
+		/*
+		 * $new_dims = [
+		 *    0 => 0
+		 *    1 => 0
+		 *    2 => // Crop start X axis
+		 *    3 => // Crop start Y axis
+		 *    4 => // New width
+		 *    5 => // New height
+		 *    6 => // Crop width on source image
+		 *    7 => // Crop height on source image
+		 * ];
+		*/
+		if ( ! $new_dims ) {
+			continue;
+		}
+		$w = (int) $new_dims[4];
+		$h = (int) $new_dims[5];
+
+		// Set crop hash if source crop isn't 0,0,orig_width,orig_height
+		$crop_details = "{$orig_w},{$orig_h},{$new_dims[2]},{$new_dims[3]},{$new_dims[6]},{$new_dims[7]}";
+		$crop_hash = '';
+		if ( $crop_details !== "{$orig_w},{$orig_h},0,0,{$orig_w},{$orig_h}" ) {
+			/*
+			 * NOTE: Custom file name data.
+			 *
+			 * The crop hash is used to help determine the correct crop to use for identically
+			 * sized images.
+			 */
+			$crop_hash = '-c' . substr( strtolower( sha1( $crop_details ) ), 0, 8 );
+		}
+		// Add meta data with fake WP style file name.
+		$data['sizes'][ $size ] = [
+			'width' => $w,
+			'height' => $h,
+			'file' => "{$filename}{$crop_hash}-{$w}x{$h}.{$ext}",
+			'mime-type' => $mime_type,
+		];
+	}
+
+	return $data;
 }
