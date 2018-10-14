@@ -28,6 +28,9 @@ function bootstrap() {
 
 	// Fake the image meta data.
 	add_filter( 'wp_get_attachment_metadata', __NAMESPACE__ . '\\filter_attachment_meta_data', 10, 2 );
+
+	// Ensure the gravity string is nice.
+	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\filter_tachyon_gravity', 10, 2 );
 }
 
 /**
@@ -175,4 +178,71 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 	}
 
 	return $data;
+}
+
+/**
+ * Tachyon gravity string can sometimes be reversed.
+ *
+ * Gravity is sometimes reported as east/west before north/south.
+ * This causes problems with the service as `eastnorth` is not recognised.
+ *
+ * @todo maybe remove normalising for portrait/landscape.
+ *
+ * @param $tachyon_args array Arguments for calling Tachyon.
+ * @param $image array The image details.
+ *
+ * @return array Modified arguments with gravity corrected.
+ */
+function filter_tachyon_gravity( $tachyon_args, $image ) {
+	if ( ! is_array( $tachyon_args ) || ! isset( $tachyon_args['gravity'] ) ) {
+		return $tachyon_args;
+	}
+
+	$gravity = $tachyon_args['gravity'];
+
+	// Ensure Gravity is not empty.
+	if ( $gravity === '' ) {
+		unset( $tachyon_args['gravity'] );
+		return $tachyon_args;
+	}
+
+	// Check if too short to need modification.
+	if ( strlen( $gravity ) <= 5 ) {
+		return $tachyon_args;
+	}
+
+	// Ensure direction is correct: northeast instead of eastnorth.
+	$gravity_tail = substr( $gravity, -5 );
+	if ( $gravity_tail === 'north' || $gravity_tail === 'south' ) {
+		$gravity = $gravity_tail . substr( $gravity, 0, -5 );
+	}
+
+	// Normalise for orientation.
+	$image_id  = $image['attachment_id'];
+	$image_meta  = wp_get_attachment_metadata( $image_id );
+
+	$orientation = '';
+	if ( isset( $image_meta['height'], $image_meta['width'] ) ) {
+		$orientation = ( $image_meta['height'] > $image_meta['width'] ) ? 'portrait' : 'landscape';
+	}
+
+	switch ( $orientation ) {
+		case 'portrait':
+			if ( strpos( $gravity, 'north' ) !== false ) {
+				$gravity = 'north';
+			} elseif ( strpos( $gravity, 'south' ) !== false ) {
+				$gravity = 'south';
+			}
+			break;
+		case 'landscape':
+			if ( strpos( $gravity, 'east' ) !== false ) {
+				$gravity = 'east';
+			} elseif ( strpos( $gravity, 'west' ) !== false ) {
+				$gravity = 'west';
+			}
+			break;
+	}
+
+	$tachyon_args['gravity'] = $gravity;
+	return $tachyon_args;
 }
