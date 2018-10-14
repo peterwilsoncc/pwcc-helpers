@@ -31,6 +31,9 @@ function bootstrap() {
 
 	// Ensure the gravity string is nice.
 	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\filter_tachyon_gravity', 10, 2 );
+
+	// Ensure WP has the srcset data it needs.
+	add_filter( 'wp_calculate_image_srcset_meta', __NAMESPACE__ . '\\filter_image_srcset_meta', 10, 4 );
 }
 
 /**
@@ -245,4 +248,53 @@ function filter_tachyon_gravity( $tachyon_args, $image ) {
 
 	$tachyon_args['gravity'] = $gravity;
 	return $tachyon_args;
+}
+
+/**
+ * Filter the meta data WordPress uses to generate the srcset.
+ *
+ * @TODO Work out how the h*ck to fix this.
+ *
+ * @param array  $image_meta    The image meta data as returned by 'wp_get_attachment_metadata()'.
+ * @param array  $size_array    Array of width and height values in pixels (in that order).
+ * @param string $image_src     The 'src' of the image.
+ * @param int    $attachment_id The image attachment ID or 0 if not supplied.
+ *
+ * @return array The modified image meta for generating the srcset.
+ */
+function filter_image_srcset_meta( $image_meta, $size_array, $image_src, $attachment_id ) {
+	/*
+	 * Because I use Tachyon in the admin/inserted data at this point
+	 * WordPress is very confused and returns the full size image as the URL.
+	 *
+	 * This in turn confuses Tachyon so it doesn't know which crop to use either.
+	 *
+	 * The result of all this confusing is that the wrong size images get included
+	 * in the srcset. Which is a problem.
+	 *
+	 * So I've ripped out the srcset as a temporary measure.
+	 *
+	 * CAUSE
+	 *
+	 * In `wp_image_add_srcset_and_sizes()` WordPress removes the querystring
+	 * from any WordPress image URLs.
+	 *
+	 * In this filter `$image_src` becomes incorrect as a result.
+	 *
+	 * POTENTIAL FIXES
+	 *
+	 * Before WP filters the content, add our own filter to fake the URL to the
+	 * URL format. That seems expensive.
+	 *
+	 * Replace the `wp_make_content_images_responsive` filter on `the_content`, that
+	 * seems less expensive but will be a pain to maintain. It require some sort of forking
+	 * to deal with old posts.
+	 *
+	 * Give up and don't use tachyon in the admin. But this will hit problems with Gutenberg
+	 * which gets image URLs from the WP REST API in which `is_admin() === false`.
+	 */
+
+	unset( $image_meta['sizes'] );
+
+	return $image_meta;
 }
