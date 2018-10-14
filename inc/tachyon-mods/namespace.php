@@ -292,7 +292,9 @@ function filter_image_srcset_meta( $image_meta, $size_array, $image_src, $attach
 	 * In `wp_image_add_srcset_and_sizes()` WordPress removes the querystring
 	 * from any WordPress image URLs.
 	 *
-	 * In this filter `$image_src` becomes incorrect as a result.
+	 * In this filter `$image_src` becomes incorrect as a result:
+	 * this: <TACHYON_URL>/image.ext?resize=400,400&crop=north
+	 * becomes: <TACHYON_URL>/image.ext
 	 *
 	 * POTENTIAL FIXES
 	 *
