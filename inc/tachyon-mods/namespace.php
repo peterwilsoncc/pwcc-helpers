@@ -45,8 +45,14 @@ function bootstrap() {
 	// Ensure the gravity string is nice.
 	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\filter_tachyon_gravity', 10, 2 );
 
-	// Ensure WP has the srcset data it needs.
-	add_filter( 'wp_calculate_image_srcset_meta', __NAMESPACE__ . '\\filter_image_srcset_meta', 10, 4 );
+	/*
+	 * Replace WordPress Core's responsive image filter with our own as
+	 * the Core one doesn't work with Tachyon due to the sizing details
+	 * being stored in the query string.
+	 */
+	remove_filter( 'the_content', 'wp_make_content_images_responsive' );
+	// Runs very late to ensure images have passed through Tachyon first.
+	add_filter( 'the_content', __NAMESPACE__ . '\\make_content_images_responsive', 999999 );
 }
 
 /**
@@ -264,52 +270,195 @@ function filter_tachyon_gravity( $tachyon_args, $image ) {
 }
 
 /**
- * Filter the meta data WordPress uses to generate the srcset.
+ * Filters 'img' elements in post content to add 'srcset' and 'sizes' attributes.
  *
- * @TODO Work out how the h*ck to fix this.
- *
- * @param array  $image_meta    The image meta data as returned by 'wp_get_attachment_metadata()'.
- * @param array  $size_array    Array of width and height values in pixels (in that order).
- * @param string $image_src     The 'src' of the image.
- * @param int    $attachment_id The image attachment ID or 0 if not supplied.
- *
- * @return array The modified image meta for generating the srcset.
+ * @param string $content The raw post content to be filtered.
+ * @return string Converted content with 'srcset' and 'sizes' attributes added to images.
  */
-function filter_image_srcset_meta( $image_meta, $size_array, $image_src, $attachment_id ) {
+function make_content_images_responsive( $content ) {
+	$images = \Tachyon::parse_images_from_html( $content );
+
+	if ( empty( $images ) ) {
+		// No images, leave early.
+		return $content;
+	}
+
+	// This bit is from Core.
+	$selected_images = $attachment_ids = [];
+	foreach ( $images['img_tag'] as $image ) {
+		if ( false === strpos( $image, ' srcset=' ) && preg_match( '/wp-image-([0-9]+)/i', $image, $class_id ) && absint( $class_id[1] ) ) {
+			$attachment_id = $class_id[1];
+			/*
+			 * If exactly the same image tag is used more than once, overwrite it.
+			 * All identical tags will be replaced later with 'str_replace()'.
+			 */
+			$selected_images[ $image ] = $attachment_id;
+			// Overwrite the ID when the same image is included more than once.
+			$attachment_ids[ $attachment_id ] = true;
+		}
+	}
+
+	if ( empty( $attachment_ids ) ) {
+		// No WP attachments, nothing further to do.
+		return $content;
+	}
+
 	/*
-	 * Because I use Tachyon in the admin/inserted data at this point
-	 * WordPress is very confused and returns the full size image as the URL.
-	 *
-	 * This in turn confuses Tachyon so it doesn't know which crop to use either.
-	 *
-	 * The result of all this confusing is that the wrong size images get included
-	 * in the srcset. Which is a problem.
-	 *
-	 * So I've ripped out the srcset as a temporary measure.
-	 *
-	 * CAUSE
-	 *
-	 * In `wp_image_add_srcset_and_sizes()` WordPress removes the querystring
-	 * from any WordPress image URLs.
-	 *
-	 * In this filter `$image_src` becomes incorrect as a result:
-	 * this: <TACHYON_URL>/image.ext?resize=400,400&crop=north
-	 * becomes: <TACHYON_URL>/image.ext
-	 *
-	 * POTENTIAL FIXES
-	 *
-	 * Before WP filters the content, add our own filter to fake the URL to the
-	 * URL format. That seems expensive.
-	 *
-	 * Replace the `wp_make_content_images_responsive` filter on `the_content`, that
-	 * seems less expensive but will be a pain to maintain. It require some sort of forking
-	 * to deal with old posts.
-	 *
-	 * Give up and don't use tachyon in the admin. But this will hit problems with Gutenberg
-	 * which gets image URLs from the WP REST API in which `is_admin() === false`.
+	 * Warm the object cache with post and meta information for all found
+	 * images to avoid making individual database calls.
 	 */
+	_prime_post_caches( array_keys( $attachment_ids ), false, true );
 
-	unset( $image_meta['sizes'] );
+	foreach ( $images['img_url'] as $key => $img_url ) {
+		if ( strpos( $img_url , TACHYON_URL ) !== 0 ) {
+			// It's not a Tachyon URL.
+			continue;
+		}
 
-	return $image_meta;
+		$image_data = [
+			'full_tag' => $images[0][ $key ],
+			'link_url' => $images['link_url'][ $key ],
+			'img_tag' => $images['img_tag'][ $key ],
+			'img_url' => $images['img_url'][ $key ],
+		];
+		$image = $image_data['img_tag'];
+
+		$attachment_id = $selected_images[ $images['img_tag'][ $key ] ];
+		$image_meta = wp_get_attachment_metadata( $attachment_id );
+		$content = str_replace( $image, add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ), $content );
+	}
+
+	return $content;
+}
+
+/**
+ * Adds 'srcset' and 'sizes' attributes to an existing 'img' element.
+ *
+ * @TODO Deal with crop.
+ *
+ * @param array $image_data    The full data extracted via `make_content_images_responsive`.
+ * @param array $image_meta    The image meta data as returned by 'wp_get_attachment_metadata()'.
+ * @param int   $attachment_id Image attachment ID.
+ *
+ * @return string Converted 'img' element with 'srcset' and 'sizes' attributes added.
+ */
+function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
+	$image = $image_data['img_tag'];
+	$image_src = $image_data['img_url'];
+
+	// Bail early if an image has been inserted and later edited.
+	list( $image_path ) = explode( '?', $image_src );
+	if ( preg_match( '/-e[0-9]{13}/', $image_meta['file'], $img_edit_hash ) &&
+	     strpos( wp_basename( $image_path ), $img_edit_hash[0] ) === false ) {
+
+		return $image;
+	}
+
+	$transform = 'fit';
+	$width = false;
+	$height = false;
+
+	parse_str( html_entity_decode( parse_url( $image_data['img_url'], PHP_URL_QUERY ) ), $tachyon_args );
+
+	// Need to work back width and height from various Tachyon options.
+	if ( isset( $tachyon_args['resize'] ) ) {
+		// Image is cropped.
+		list( $width, $height ) = explode( ',', $tachyon_args['resize'] );
+		$transform = 'resize';
+	} elseif ( isset( $tachyon_args['fit'] ) ) {
+		// Image is uncropped.
+		list( $width, $height ) = explode( ',', $tachyon_args['fit'] );
+	} else {
+		if ( isset( $tachyon_args['w'] ) ) {
+			$width = (int) $tachyon_args['w'];
+		}
+		if ( isset( $tachyon_args['h'] ) ) {
+			$height = (int) $tachyon_args['h'];
+		}
+	}
+
+	$image_filename = wp_basename( $image_path );
+	$meta_matches = $image_filename === wp_basename( $image_meta['file'] );
+
+	if ( ! $meta_matches && ! $width ) {
+		// Unable to work out width.
+		return $image;
+	}
+
+	if ( ! $width && ! $height ) {
+		$width = (int) $image_meta['width'];
+		$height = (int) $image_meta['height'];
+	} elseif ( ! $height ) {
+		$height = (int) ( $image_meta['height'] * ( $width / $image_meta['width'] ) );
+	}
+
+	// Still stumped?
+	if ( ! $width || ! $height ) {
+		return $image;
+	}
+
+	$size_array = array( $width, $height );
+	$sources = [];
+	$srcset = '';
+
+	global $content_width;
+	$std_srcset_widths = [
+		320,
+		480,
+		768,
+		$content_width,
+		$content_width * 2,
+		$image_meta['width'],
+	];
+
+	sort( $std_srcset_widths, SORT_NUMERIC );
+
+	foreach( $std_srcset_widths as $srcset_width ) {
+		if ( $height ) {
+			$srcset_height = intval( $height * ( $srcset_width / $width ) );
+			$args[ $transform ] = "{$srcset_width},{$srcset_height}";
+		} else {
+			$args[ 'w' ] = $srcset_width;
+		}
+		$args = array_merge( $args, array_intersect_key( $tachyon_args, [ 'gravity' => true ] ) );
+
+		$source = array(
+			'url'        => add_query_arg( $args, $image_path ),
+			'descriptor' => 'w',
+			'value'      => $srcset_width,
+		);
+
+		$sources[ $srcset_width ] = $source;
+
+		unset( $args );
+	}
+
+	foreach ( $sources as $source ) {
+		$srcset .= str_replace( ' ', '%20', $source['url'] ) . ' ' . $source['value'] . $source['descriptor'] . ', ';
+	}
+
+	$srcset = rtrim( $srcset, ', ' );
+
+	if ( $srcset ) {
+		// Check if there is already a 'sizes' attribute.
+		$sizes = strpos( $image, ' sizes=' );
+
+		if ( ! $sizes ) {
+			$sizes = wp_calculate_image_sizes( $size_array, $image_src, $image_meta, $attachment_id );
+		}
+	}
+
+	if ( $srcset && $sizes ) {
+		// Format the 'srcset' and 'sizes' string and escape attributes.
+		$attr = sprintf( ' srcset="%s"', esc_attr( $srcset ) );
+
+		if ( is_string( $sizes ) ) {
+			$attr .= sprintf( ' sizes="%s"', esc_attr( $sizes ) );
+		}
+
+		// Add 'srcset' and 'sizes' attributes to the image markup.
+		$image = preg_replace( '/<img ([^>]+?)[\/ ]*>/', '<img $1' . $attr . ' />', $image );
+	}
+
+	return $image;
 }
