@@ -61,7 +61,6 @@ function bootstrap() {
  * dimensions, not just their names.
  *
  * Credit: Automattic's Jetpack plugin.
- *
  * @link https://github.com/Automattic/jetpack/blob/master/class.photon.php
  *
  * @global $wp_additional_image_sizes array Custom registered image sizes.
@@ -132,7 +131,7 @@ function image_sizes() {
  *    NO image sizes are included in the meta data.
  *
  * @param $data          array The original attachment meta data.
- * @param $attachment_id int The attachment ID.
+ * @param $attachment_id int   The attachment ID.
  *
  * @return array The modified attachment data including "new" image sizes.
  */
@@ -208,10 +207,8 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
  * Gravity is sometimes reported as east/west before north/south.
  * This causes problems with the service as `eastnorth` is not recognised.
  *
- * @todo maybe remove normalising for portrait/landscape.
- *
  * @param $tachyon_args array Arguments for calling Tachyon.
- * @param $image array The image details.
+ * @param $image        array The image details.
  *
  * @return array Modified arguments with gravity corrected.
  */
@@ -273,6 +270,7 @@ function filter_tachyon_gravity( $tachyon_args, $image ) {
  * Filters 'img' elements in post content to add 'srcset' and 'sizes' attributes.
  *
  * @param string $content The raw post content to be filtered.
+ *
  * @return string Converted content with 'srcset' and 'sizes' attributes added to images.
  */
 function make_content_images_responsive( $content ) {
@@ -284,7 +282,8 @@ function make_content_images_responsive( $content ) {
 	}
 
 	// This bit is from Core.
-	$selected_images = $attachment_ids = [];
+	$selected_images = [];
+	$attachment_ids = [];
 	foreach ( $images['img_tag'] as $image ) {
 		if ( false === strpos( $image, ' srcset=' ) && preg_match( '/wp-image-([0-9]+)/i', $image, $class_id ) && absint( $class_id[1] ) ) {
 			$attachment_id = $class_id[1];
@@ -310,7 +309,7 @@ function make_content_images_responsive( $content ) {
 	_prime_post_caches( array_keys( $attachment_ids ), false, true );
 
 	foreach ( $images['img_url'] as $key => $img_url ) {
-		if ( strpos( $img_url , TACHYON_URL ) !== 0 ) {
+		if ( strpos( $img_url, TACHYON_URL ) !== 0 ) {
 			// It's not a Tachyon URL.
 			continue;
 		}
@@ -349,7 +348,7 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 	// Bail early if an image has been inserted and later edited.
 	list( $image_path ) = explode( '?', $image_src );
 	if ( preg_match( '/-e[0-9]{13}/', $image_meta['file'], $img_edit_hash ) &&
-	     strpos( wp_basename( $image_path ), $img_edit_hash[0] ) === false ) {
+		strpos( wp_basename( $image_path ), $img_edit_hash[0] ) === false ) {
 
 		return $image;
 	}
@@ -358,7 +357,7 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 	$width = false;
 	$height = false;
 
-	parse_str( html_entity_decode( parse_url( $image_data['img_url'], PHP_URL_QUERY ) ), $tachyon_args );
+	parse_str( html_entity_decode( wp_parse_url( $image_data['img_url'], PHP_URL_QUERY ) ), $tachyon_args );
 
 	// Need to work back width and height from various Tachyon options.
 	if ( isset( $tachyon_args['resize'] ) ) {
@@ -397,7 +396,7 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 		return $image;
 	}
 
-	$size_array = array( $width, $height );
+	$size_array = [ $width, $height ];
 	$sources = [];
 	$srcset = '';
 
@@ -413,20 +412,20 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 
 	sort( $std_srcset_widths, SORT_NUMERIC );
 
-	foreach( $std_srcset_widths as $srcset_width ) {
+	foreach ( $std_srcset_widths as $srcset_width ) {
 		if ( $height ) {
 			$srcset_height = intval( $height * ( $srcset_width / $width ) );
 			$args[ $transform ] = "{$srcset_width},{$srcset_height}";
 		} else {
-			$args[ 'w' ] = $srcset_width;
+			$args['w'] = $srcset_width;
 		}
 		$args = array_merge( $args, array_intersect_key( $tachyon_args, [ 'gravity' => true ] ) );
 
-		$source = array(
+		$source = [
 			'url'        => add_query_arg( $args, $image_path ),
 			'descriptor' => 'w',
 			'value'      => $srcset_width,
-		);
+		];
 
 		$sources[ $srcset_width ] = $source;
 
