@@ -120,6 +120,8 @@ function image_sizes() {
  *  - when using Tachyon in admin and disabling resizing,
  *    NO image sizes are included in the meta data.
  *
+ * @TODO Work out how to name files if crop on upload is reintroduced.
+ *
  * @param $data          array The original attachment meta data.
  * @param $attachment_id int   The attachment ID.
  *
@@ -324,7 +326,8 @@ function make_content_images_responsive( $content ) {
 /**
  * Adds 'srcset' and 'sizes' attributes to an existing 'img' element.
  *
- * @TODO Deal with crop.
+ * @TODO Deal with edit hashes by getting the previous version of the meta
+ *       data if required for calculating the srcset.
  *
  * @param array $image_data    The full data extracted via `make_content_images_responsive`.
  * @param array $image_meta    The image meta data as returned by 'wp_get_attachment_metadata()'.
