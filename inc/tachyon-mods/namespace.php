@@ -45,6 +45,9 @@ function bootstrap() {
 	// Ensure the gravity string is nice.
 	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\filter_tachyon_gravity', 10, 2 );
 
+	// Filter the `sizes` attribute.
+	add_filter( 'wp_calculate_image_sizes', __NAMESPACE__ . '\\filter_2014_calculate_image_sizes', 10, 5 );
+
 	/*
 	 * Replace WordPress Core's responsive image filter with our own as
 	 * the Core one doesn't work with Tachyon due to the sizing details
@@ -284,14 +287,28 @@ function make_content_images_responsive( $content ) {
 	// This bit is from Core.
 	$selected_images = [];
 	$attachment_ids = [];
-	foreach ( $images['img_tag'] as $image ) {
+	foreach ( $images['img_url'] as $key => $img_url ) {
+		if ( strpos( $img_url, TACHYON_URL ) !== 0 ) {
+			// It's not a Tachyon URL.
+			continue;
+		}
+
+		$image_data = [
+			'full_tag' => $images[0][ $key ],
+			'link_url' => $images['link_url'][ $key ],
+			'img_tag' => $images['img_tag'][ $key ],
+			'img_url' => $images['img_url'][ $key ],
+		];
+		$image = $image_data['img_tag'];
+
 		if ( false === strpos( $image, ' srcset=' ) && preg_match( '/wp-image-([0-9]+)/i', $image, $class_id ) && absint( $class_id[1] ) ) {
 			$attachment_id = $class_id[1];
+			$image_data['id'] = $attachment_id;
 			/*
 			 * If exactly the same image tag is used more than once, overwrite it.
 			 * All identical tags will be replaced later with 'str_replace()'.
 			 */
-			$selected_images[ $image ] = $attachment_id;
+			$selected_images[ $image ] = $image_data;
 			// Overwrite the ID when the same image is included more than once.
 			$attachment_ids[ $attachment_id ] = true;
 		}
@@ -308,21 +325,8 @@ function make_content_images_responsive( $content ) {
 	 */
 	_prime_post_caches( array_keys( $attachment_ids ), false, true );
 
-	foreach ( $images['img_url'] as $key => $img_url ) {
-		if ( strpos( $img_url, TACHYON_URL ) !== 0 ) {
-			// It's not a Tachyon URL.
-			continue;
-		}
-
-		$image_data = [
-			'full_tag' => $images[0][ $key ],
-			'link_url' => $images['link_url'][ $key ],
-			'img_tag' => $images['img_tag'][ $key ],
-			'img_url' => $images['img_url'][ $key ],
-		];
-		$image = $image_data['img_tag'];
-
-		$attachment_id = $selected_images[ $images['img_tag'][ $key ] ];
+	foreach ( $selected_images as $image => $image_data ) {
+		$attachment_id = $image_data['id'];
 		$image_meta = wp_get_attachment_metadata( $attachment_id );
 		$content = str_replace( $image, add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ), $content );
 	}
@@ -401,18 +405,34 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 	$srcset = '';
 
 	global $content_width;
-	$std_srcset_widths = [
-		320,
-		480,
-		768,
-		$content_width,
-		$content_width * 2,
-		$image_meta['width'],
-	];
 
-	sort( $std_srcset_widths, SORT_NUMERIC );
+	/*
+	 * Determine max srcset candidate size.
+	 *
+	 * It's the smallest of the following:
+	 * - content width * 2
+	 * - display size * 2
+	 * - full size image
+	 */
+	$min_width = 480;
+	$max_width = min( $content_width * 2, $width * 2, $image_meta['width'] );
+	$candidates = 5;
 
-	foreach ( $std_srcset_widths as $srcset_width ) {
+	if ( $max_width < $min_width ) {
+		// No need for a srcset.
+		return $image;
+	}
+
+	$src_set_widths = [ $min_width, $max_width ];
+
+	while ( $candidates > 2 ) {
+		$candidates --;
+		$src_set_widths[] = $max_width - ( ( $max_width - $min_width ) / $candidates );
+	}
+
+	sort( $src_set_widths, SORT_NUMERIC );
+
+	foreach ( $src_set_widths as $srcset_width ) {
 		if ( $height ) {
 			$srcset_height = intval( $height * ( $srcset_width / $width ) );
 			$args[ $transform ] = "{$srcset_width},{$srcset_height}";
@@ -460,4 +480,58 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 	}
 
 	return $image;
+}
+
+/**
+ * Modify the `sizes` attribute for responsive images.
+ *
+ * Improves the sizes attribute for use with the Twenty Fourteen
+ * theme and the defined content width.
+ *
+ * @global int $content_width The content width used by the theme.
+ *
+ * @param string       $sizes         A source size value for use in a 'sizes' attribute.
+ * @param array|string $size          Requested size. Image size or array of width and height values
+ *                                    in pixels (in that order).
+ * @param string|null  $image_src     The URL to the image file or null.
+ * @param array|null   $image_meta    The image meta data as returned by wp_get_attachment_metadata() or null.
+ * @param int          $attachment_id Image attachment ID of the original image or 0.
+ *
+ * @return string Modified sizes attribute for use with the theme 2014.
+ */
+function filter_2014_calculate_image_sizes( $sizes, $size, $image_src, $image_meta, $attachment_id ) {
+	global $content_width;
+
+	if ( ! function_exists( 'twentyfourteen_setup' ) ) {
+		return $sizes;
+	}
+	$width = 0;
+
+	if ( is_array( $size ) ) {
+		$width = absint( $size[0] );
+	} elseif ( is_string( $size ) ) {
+		if ( ! $image_meta && $attachment_id ) {
+			$image_meta = wp_get_attachment_metadata( $attachment_id );
+		}
+
+		if ( is_array( $image_meta ) ) {
+			$size_array = _wp_get_image_size_from_meta( $size, $image_meta );
+			if ( $size_array ) {
+				$width = absint( $size_array[0] );
+			}
+		}
+	}
+
+	if ( $width > $content_width ) {
+		// It's too big.
+		$width = $content_width;
+		$mq_width = $content_width;
+	} else {
+		$mq_width = $width;
+	}
+
+	// Setup the 'sizes' attribute.
+	$sizes = sprintf( '(max-width: %1$dpx) 100vw, %2$dpx', $mq_width, $width );
+
+	return $sizes;
 }
