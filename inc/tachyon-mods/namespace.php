@@ -418,7 +418,7 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 	$max_width = min( $content_width * 2, $width * 2, $image_meta['width'] );
 	$candidates = 5;
 
-	if ( $max_width < $min_width ) {
+	if ( $max_width <= $min_width ) {
 		// No need for a srcset.
 		return $image;
 	}
