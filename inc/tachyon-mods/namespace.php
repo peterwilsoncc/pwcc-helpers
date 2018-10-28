@@ -128,6 +128,13 @@ function image_sizes() {
  * @return array The modified attachment data including "new" image sizes.
  */
 function filter_attachment_meta_data( $data, $attachment_id ) {
+	// Save time, only calculate once.
+	static $cache = [];
+
+	if ( isset( $cache[ $attachment_id ] ) ) {
+		return $cache[ $attachment_id ];
+	}
+
 	// Only modify if valid format and for images.
 	if ( ! is_array( $data ) || ! wp_attachment_is_image( $attachment_id ) ) {
 		return $data;
@@ -190,6 +197,7 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 		];
 	}
 
+	$cache[ $attachment_id ] = $data;
 	return $data;
 }
 
