@@ -327,7 +327,8 @@ function make_content_images_responsive( $content ) {
  * Adds 'srcset' and 'sizes' attributes to an existing 'img' element.
  *
  * @TODO Deal with edit hashes by getting the previous version of the meta
- *       data if required for calculating the srcset.
+ *       data if required for calculating the srcset using the meta value of
+ *       `_wp_attachment_backup_sizes`.
  *
  * @param array $image_data    The full data extracted via `make_content_images_responsive`.
  * @param array $image_meta    The image meta data as returned by 'wp_get_attachment_metadata()'.
