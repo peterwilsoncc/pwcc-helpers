@@ -336,7 +336,8 @@ function make_content_images_responsive( $content ) {
  *
  * @TODO Deal with edit hashes by getting the previous version of the meta
  *       data if required for calculating the srcset using the meta value of
- *       `_wp_attachment_backup_sizes`.
+ *       `_wp_attachment_backup_sizes`. To get the edit hash, refer to
+ *       wp/wp-includes/media.php:1380
  *
  * @param array $image_data    The full data extracted via `make_content_images_responsive`.
  * @param array $image_meta    The image meta data as returned by 'wp_get_attachment_metadata()'.
