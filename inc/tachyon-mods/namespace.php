@@ -430,6 +430,7 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 	}
 
 	sort( $src_set_widths, SORT_NUMERIC );
+	$src_set_widths = array_unique( array_map( 'intval', $src_set_widths ) );
 
 	foreach ( $src_set_widths as $srcset_width ) {
 		if ( $height ) {
