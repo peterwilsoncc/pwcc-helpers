@@ -11,21 +11,8 @@ namespace PWCC\Helpers\TachyonMods;
 
 /**
  * Bootstrap Tachyon mods.
- *
- * @TODO: Remove custom image sizes that confuse both WP and Tachy.
  */
 function bootstrap() {
-	add_image_size( 'North', 400, 400, [ 'center', 'top' ] );
-	add_image_size( 'South', 400, 400, [ 'center', 'bottom' ] );
-	add_image_size( 'West', 400, 400, [ 'left', 'center' ] );
-	add_image_size( 'East', 400, 400, [ 'right', 'center' ] );
-	add_image_size( 'NorthWest', 400, 400, [ 'left', 'top' ] );
-	add_image_size( 'NorthEast', 400, 400, [ 'right', 'top' ] );
-	add_image_size( 'SouthWest', 400, 400, [ 'left', 'bottom' ] );
-	add_image_size( 'SouthEast', 400, 400, [ 'right', 'bottom' ] );
-
-	add_image_size( 'Bullseye', 400, 400, [ 'center', 'center' ] );
-
 	// Ensure Tachyon is set up before running.
 	if ( ! function_exists( 'tachyon_url' ) ) {
 		return;
