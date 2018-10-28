@@ -349,8 +349,13 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 	$image = $image_data['img_tag'];
 	$image_src = $image_data['img_url'];
 
-	// Get the URL without the query string.
+	// Bail early if an image has been inserted and later edited.
 	list( $image_path ) = explode( '?', $image_src );
+	if ( preg_match( '/-e[0-9]{13}/', $image_meta['file'], $img_edit_hash ) &&
+		strpos( wp_basename( $image_path ), $img_edit_hash[0] ) === false ) {
+
+		return $image;
+	}
 
 	$transform = 'fit';
 	$width = false;
