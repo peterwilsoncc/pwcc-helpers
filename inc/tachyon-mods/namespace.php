@@ -410,7 +410,11 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 	 * - full size image
 	 */
 	$min_width = 480;
-	$max_width = min( $content_width * 2, $width * 2, $image_meta['width'] );
+	$max_widths = [ $content_width * 2, $width * 2 ];
+	if ( isset( $image_meta['width'] ) ) {
+		$max_widths[] = $image_meta['width'];
+	}
+	$max_width = min( $max_widths );
 	$candidates = 5;
 
 	if ( $max_width <= $min_width ) {
