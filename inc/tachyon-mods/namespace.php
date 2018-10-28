@@ -140,6 +140,8 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 		return $data;
 	}
 
+	$data = massage_meta_data_for_orientation( $data );
+
 	// Full size image info.
 	$image_sizes = image_sizes();
 	$mime_type = get_post_mime_type( $attachment_id );
@@ -199,6 +201,49 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 
 	$cache[ $attachment_id ] = $data;
 	return $data;
+}
+
+/**
+ * Swap width and height if required.
+ *
+ * The Tachyon service/sharp library will automatically fix
+ * the orientation but as a result, the width and height will
+ * be the reverse of that calculated on upload.
+ *
+ * This swaps the width and height if needed but it does not
+ * fix the image on upload as we have Tachy for that.
+ *
+ * @param array $meta_data Meta data stored in the database.
+ *
+ * @return array Meta data with correct width and height.
+ */
+function massage_meta_data_for_orientation( array $meta_data ) {
+	if ( empty( $meta_data['image_meta']['orientation'] ) ) {
+		// No orientation data to fix.
+		return $meta_data;
+	}
+
+	$fix_width_height = false;
+
+	switch ( $meta_data['image_meta']['orientation'] ) {
+		case 5:
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+			$fix_width_height = true;
+			break;
+	}
+
+	if ( ! $fix_width_height ) {
+		return $meta_data;
+	}
+
+	$width = $meta_data['height'];
+	$meta_data['height'] = $meta_data['width'];
+	$meta_data['width'] = $width;
+
+	return $meta_data;
 }
 
 /**
