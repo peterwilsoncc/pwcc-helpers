@@ -29,40 +29,95 @@ function after_theme_bootstrap() {
 	}
 
 	add_action( 'template_redirect', __NAMESPACE__ . '\\enqueue_scripts' );
+	remove_action( 'wp_enqueue_scripts', 'twentyfourteen_scripts' );
 }
 
 /**
- * Enqueue and server push a CSS stylesheet.
+ * Generates an enqueued style's fully-qualified URL.
  *
- * Registers the style if source provided (does NOT overwrite) and enqueues.
+ * Source is $wp-styles->_css_href but this is unescaped.
  *
- * @param string           $handle Name of the stylesheet. Should be unique.
- * @param string           $src    Full URL of the stylesheet, or path of the stylesheet relative to the WordPress root directory.
- *                                 Default empty.
- * @param array            $deps   Optional. An array of registered stylesheet handles this stylesheet depends on. Default empty array.
- * @param string|bool|null $ver    Optional. String specifying stylesheet version number, if it has one, which is added to the URL
- *                                 as a query string for cache busting purposes. If version is set to false, a version
- *                                 number is automatically added equal to current installed WordPress version.
- *                                 If set to null, no version is added.
- * @param string           $media  Optional. The media for which this stylesheet has been defined.
- *                                 Default 'all'. Accepts media types like 'all', 'print' and 'screen', or media queries like
- *                                 '(orientation: portrait)' and '(max-width: 640px)'.
+ * @param string $src The source of the enqueued style.
+ * @param string $ver The version of the enqueued style.
+ * @param string $handle The style's registered handle.
+ * @return string Style's fully-qualified URL.
  */
-function wp_push_style( $handle, $src = '', $deps = array(), $ver = false, $media = 'all' ) {
-	wp_enqueue_style( $handle, $src, $deps, $ver, $media );
+function _css_src( $src, $ver, $handle ) {
+	if ( ! is_bool( $src ) && ! preg_match( '|^(https?:)?//|', $src ) && ! ( $this->content_url && 0 === strpos( $src, $this->content_url ) ) ) {
+		$src = $this->base_url . $src;
+	}
 
-	// Don't push if the CSS is just being enqueued.
-	if ( ! $src ) {
+	if ( ! empty( $ver ) ) {
+		$src = add_query_arg( 'ver', $ver, $src );
+	}
+
+	$src = apply_filters( 'style_loader_src', $src, $handle );
+	return $src;
+}
+
+/**
+ * Send HTTP 2 Push headers for Queued CSS files.
+ *
+ * @TODO: Handle dependencies.
+ */
+function wp_push_styles() {
+	global $wp_styles;
+	$dependencies = $wp_styles;
+	$push = [];
+
+	$queue = $dependencies->queue;
+
+	if ( empty( $queue ) ) {
 		return;
 	}
 
-	$http_header = '';
-	$http_header .= 'Link: ';
-	$http_header .= "<$src> ;";
-	$http_header .= 'rel=preload; ';
-	$http_header .= 'as=style; ';
+	foreach ( $queue as $handle ) {
+		// No idea what to do.
+		if ( ! isset( $dependencies->registered[ $handle ] ) ) {
+			continue;
+		}
 
-	header( $http_header, false );
+		$obj = $dependencies->registered[ $handle ];
+		$alt = isset( $obj->extra['alt'] ) && $obj->extra['alt'];
+
+		// Browser may not need it.
+		if ( isset( $obj->extra['conditional'] ) || $alt ) {
+			continue;
+		}
+
+		if ( null === $obj->ver ) {
+			$ver = '';
+		} else {
+			$ver = $obj->ver ? $obj->ver : $dependencies->default_version;
+		}
+
+		if ( isset( $dependencies->args[ $handle ] ) ) {
+			$ver = $ver ? $ver . '&amp;' . $dependencies->args[ $handle ] : $dependencies->args[ $handle ];
+		}
+
+		$src = $obj->src;
+
+		if ( isset( $obj->args ) ) {
+			$media = esc_attr( $obj->args );
+		} else {
+			$media = 'all';
+		}
+
+		$href = _css_src( $src, $ver, $handle );
+		if ( ! $href ) {
+			continue;
+		}
+
+		$push[] = "<$href>; rel=preload; as=style";
+	}
+
+	if ( ! $push ) {
+		return;
+	}
+
+	header( 'Link: ' . implode( ', ', array_unique( $push ) ), false );
+
+	return $push;
 }
 
 /**
@@ -108,41 +163,7 @@ function wp_push_script( $handle, $src = '', $deps = array(), $ver = false, $in_
  * Enqueue assets required by 2014 theme.
  */
 function enqueue_scripts() {
-	// Add Lato font, used in the main stylesheet.
-	wp_push_style( 'twentyfourteen-lato', twentyfourteen_font_url(), array(), null );
+	twentyfourteen_scripts();
 
-	// Add Genericons font, used in the main stylesheet.
-	wp_push_style( 'genericons', get_template_directory_uri() . '/genericons/genericons.css', array(), '3.0.3' );
-
-	// Load our main stylesheet.
-	wp_push_style( 'twentyfourteen-style', get_stylesheet_uri() );
-
-	// Theme block stylesheet.
-	wp_push_style( 'twentyfourteen-block-style', get_template_directory_uri() . '/css/blocks.css', array( 'twentyfourteen-style' ), '20181230' );
-
-	// Load the Internet Explorer specific stylesheet.
-	wp_enqueue_style( 'twentyfourteen-ie', get_template_directory_uri() . '/css/ie.css', array( 'twentyfourteen-style' ), '20131205' );
-	wp_style_add_data( 'twentyfourteen-ie', 'conditional', 'lt IE 9' );
-
-	if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
-		wp_push_script( 'comment-reply' );
-	}
-
-	if ( is_singular() && wp_attachment_is_image() ) {
-		wp_push_script( 'twentyfourteen-keyboard-image-navigation', get_template_directory_uri() . '/js/keyboard-image-navigation.js', array( 'jquery' ), '20130402' );
-	}
-
-	if ( is_active_sidebar( 'sidebar-3' ) ) {
-		wp_push_script( 'jquery-masonry' );
-	}
-
-	if ( is_front_page() && 'slider' == get_theme_mod( 'featured_content_layout' ) ) {
-		wp_push_script( 'twentyfourteen-slider', get_template_directory_uri() . '/js/slider.js', array( 'jquery' ), '20131205', true );
-		wp_localize_script( 'twentyfourteen-slider', 'featuredSliderDefaults', array(
-			'prevText' => __( 'Previous', 'twentyfourteen' ),
-			'nextText' => __( 'Next', 'twentyfourteen' )
-		) );
-	}
-
-	wp_push_script( 'twentyfourteen-script', get_template_directory_uri() . '/js/functions.js', array( 'jquery' ), '20150315', true );
+	wp_push_styles();
 }
