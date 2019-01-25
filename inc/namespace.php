@@ -19,6 +19,7 @@ namespace PWCC\Helpers;
 function fast_bootstrap() {
 	add_filter( 'backwpup_register_destination', __NAMESPACE__ . '\\remove_s3_conflict' );
 	JetpackFixes\fast_bootstrap();
+	TwentyFourteen\bootstrap();
 }
 
 /**
