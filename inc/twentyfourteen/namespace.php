@@ -75,6 +75,11 @@ function wp_push_styles() {
 		return [];
 	}
 
+	if ( $dependencies->do_concat ) {
+		// Ugh, let's not for now.
+		return [];
+	}
+
 	foreach ( $queue as $handle ) {
 		// No idea what to do.
 		if ( ! isset( $dependencies->registered[ $handle ] ) ) {
