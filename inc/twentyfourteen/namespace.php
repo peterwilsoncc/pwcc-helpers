@@ -62,6 +62,8 @@ function _css_src( $src, $ver, $handle ) {
  * Send HTTP 2 Push headers for Queued CSS files.
  *
  * @TODO: Handle dependencies.
+ *
+ * @return array CSS assets to push/preload.
  */
 function wp_push_styles() {
 	global $wp_styles;
@@ -135,6 +137,8 @@ function wp_push_styles() {
  *
  * @TODO: Handle dependencies.
  * @TODO: Handle concatenated scripts.
+ *
+ * @return array JS assets to push/preload.
  */
 function wp_push_scripts() {
 	global $wp_scripts;
