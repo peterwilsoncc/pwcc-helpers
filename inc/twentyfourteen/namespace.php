@@ -126,42 +126,84 @@ function wp_push_styles() {
 }
 
 /**
- * Enqueue and push a script.
+ * Send HTTP 2 Push headers for Queued JavaScript files.
  *
- * Registers the script if $src provided (does NOT overwrite), and enqueues it.
- *
- * @see WP_Dependencies::add()
- * @see WP_Dependencies::add_data()
- * @see WP_Dependencies::enqueue()
- *
- * @since 2.1.0
- *
- * @param string           $handle    Name of the script. Should be unique.
- * @param string           $src       Full URL of the script, or path of the script relative to the WordPress root directory.
- *                                    Default empty.
- * @param array            $deps      Optional. An array of registered script handles this script depends on. Default empty array.
- * @param string|bool|null $ver       Optional. String specifying script version number, if it has one, which is added to the URL
- *                                    as a query string for cache busting purposes. If version is set to false, a version
- *                                    number is automatically added equal to current installed WordPress version.
- *                                    If set to null, no version is added.
- * @param bool             $in_footer Optional. Whether to enqueue the script before </body> instead of in the <head>.
- *                                    Default 'false'.
+ * @TODO: Handle dependencies.
+ * @TODO: Handle concatenated scripts.
  */
-function wp_push_script( $handle, $src = '', $deps = array(), $ver = false, $in_footer = false ) {
-	wp_enqueue_script( $handle, $src, $deps, $ver, $in_footer );
+function wp_push_scripts() {
+	global $wp_scripts;
+	$dependencies = $wp_scripts;
+	$push = [];
 
-	// Don't push if the JS is just being enqueued or is loaded in the footer.
-	if ( ! $src || ! $in_footer ) {
-		return;
+	$queue = $dependencies->queue;
+
+	if ( empty( $queue ) ) {
+		return [];
 	}
 
-	$http_header = '';
-	$http_header .= 'Link: ';
-	$http_header .= "<$src> ;";
-	$http_header .= 'rel=preload; ';
-	$http_header .= 'as=script; ';
+	if ( $dependencies->do_concat ) {
+		// Ugh, let's not for now.
+		return [];
+	}
 
-	header( $http_header, false );
+	foreach ( $queue as $handle ) {
+		// No idea what to do.
+		if ( ! isset( $dependencies->registered[ $handle ] ) ) {
+			continue;
+		}
+
+		$obj = $dependencies->registered[ $handle ];
+		$src = $obj->src;
+
+		// No source, no push.
+		if ( ! $src ) {
+			continue;
+		}
+
+		// Browser may not need it.
+		if ( isset( $obj->extra['conditional'] ) ) {
+			continue;
+		}
+
+		// Only push header scripts
+		if ( $obj->groups[ $handle ] > 0 ) {
+			continue;
+		}
+
+		if ( null === $obj->ver ) {
+			$ver = '';
+		} else {
+			$ver = $obj->ver ? $obj->ver : $dependencies->default_version;
+		}
+
+		if ( isset( $dependencies->args[ $handle ] ) ) {
+			$ver = $ver ? $ver . '&amp;' . $dependencies->args[ $handle ] : $dependencies->args[ $handle ];
+		}
+
+		if ( ! empty( $ver ) ) {
+			$src = add_query_arg( 'ver', $ver, $src );
+		}
+
+		/** This filter is documented in wp-includes/class.wp-scripts.php */
+		$src = apply_filters( 'script_loader_src', $src, $handle );
+
+		if ( ! $src ) {
+			continue;
+		}
+
+		$push[] = "<$src>; rel=preload; as=script";
+	}
+
+	if ( ! $push ) {
+		return [];
+	}
+
+	$push = array_unique( $push );
+
+	@header( 'Link: ' . implode( ', ', $push ), false );
+
+	return $push;
 }
 
 /**
@@ -171,4 +213,5 @@ function enqueue_scripts() {
 	twentyfourteen_scripts();
 
 	wp_push_styles();
+	wp_push_scripts();
 }
