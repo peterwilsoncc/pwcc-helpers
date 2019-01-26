@@ -71,7 +71,7 @@ function wp_push_styles() {
 	$queue = $dependencies->queue;
 
 	if ( empty( $queue ) ) {
-		return;
+		return [];
 	}
 
 	foreach ( $queue as $handle ) {
@@ -115,7 +115,7 @@ function wp_push_styles() {
 	}
 
 	if ( ! $push ) {
-		return;
+		return [];
 	}
 
 	header( 'Link: ' . implode( ', ', array_unique( $push ) ), false );
