@@ -20,6 +20,8 @@ function bootstrap() {
 
 /**
  * Bootstrap once the theme is available.
+ *
+ * @TODO: Only push on first visit.
  */
 function after_theme_bootstrap() {
 	if ( ! function_exists( '\\twentyfourteen_setup' ) ) {
