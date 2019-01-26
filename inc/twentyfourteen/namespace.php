@@ -118,7 +118,9 @@ function wp_push_styles() {
 		return [];
 	}
 
-	header( 'Link: ' . implode( ', ', array_unique( $push ) ), false );
+	$push = array_unique( $push );
+
+	@header( 'Link: ' . implode( ', ', $push ), false );
 
 	return $push;
 }
