@@ -22,7 +22,6 @@ function bootstrap() {
  * Bootstrap once the theme is available.
  */
 function after_theme_bootstrap() {
-	global $wp_styles;
 	if ( ! function_exists( '\\twentyfourteen_setup' ) ) {
 		// The site is not using twentyfourteen. Bail.
 		return;
