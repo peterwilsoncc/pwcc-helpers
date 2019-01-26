@@ -43,8 +43,11 @@ function after_theme_bootstrap() {
  * @return string Style's fully-qualified URL.
  */
 function _css_src( $src, $ver, $handle ) {
-	if ( ! is_bool( $src ) && ! preg_match( '|^(https?:)?//|', $src ) && ! ( $this->content_url && 0 === strpos( $src, $this->content_url ) ) ) {
-		$src = $this->base_url . $src;
+	global $wp_styles;
+	$dependencies = $wp_styles;
+
+	if ( ! is_bool( $src ) && ! preg_match( '|^(https?:)?//|', $src ) && ! ( $dependencies->content_url && 0 === strpos( $src, $dependencies->content_url ) ) ) {
+		$src = $dependencies->base_url . $src;
 	}
 
 	if ( ! empty( $ver ) ) {
