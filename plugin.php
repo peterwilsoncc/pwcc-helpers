@@ -28,21 +28,3 @@ require_once __DIR__ . '/inc/twentyfourteen/namespace.php';
 
 fast_bootstrap();
 add_action( 'plugins_loaded', __NAMESPACE__ . '\\bootstrap' );
-
-
-add_action( 'template_redirect', function() {
-	return;
-
-	header( 'X-template_redirect: here' );
-
-	$wrong = ( did_action( 'init' ) || did_action( 'admin_enqueue_scripts' ) || did_action( 'wp_enqueue_scripts' ) || did_action( 'login_enqueue_scripts' ) );
-
-
-	var_dump( 'template_redirect', function_exists( '\\twentyfourteen_scripts' ), $wrong );
-
-	global $wp_query;
-	var_dump( $wp_query );
-
-	\twentyfourteen_scripts();
-	exit;
-} );
