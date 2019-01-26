@@ -88,6 +88,17 @@ function wp_push_styles() {
 			continue;
 		}
 
+		if ( isset( $obj->args ) ) {
+			$media = esc_attr( $obj->args );
+		} else {
+			$media = 'all';
+		}
+
+		if ( $media !== 'all' ) {
+			// Browser may not want it early.
+			continue;
+		}
+
 		if ( null === $obj->ver ) {
 			$ver = '';
 		} else {
@@ -99,12 +110,6 @@ function wp_push_styles() {
 		}
 
 		$src = $obj->src;
-
-		if ( isset( $obj->args ) ) {
-			$media = esc_attr( $obj->args );
-		} else {
-			$media = 'all';
-		}
 
 		$href = _css_src( $src, $ver, $handle );
 		if ( ! $href ) {
