@@ -12,6 +12,8 @@ namespace PWCC\Helpers\TwentyFourteen;
 /**
  * Boostrap the plugin.
  *
+ * This runs on the `plugins_loaded` action.
+ *
  * Need to wait until the theme is set up before attempting to boostrap.
  */
 function bootstrap() {
@@ -20,6 +22,8 @@ function bootstrap() {
 
 /**
  * Bootstrap once the theme is available.
+ *
+ * This runs on the `after_setup_theme` action.
  *
  * @TODO: Only push on first visit.
  */
@@ -225,6 +229,8 @@ function wp_push_scripts() {
 
 /**
  * Enqueue assets required by 2014 theme.
+ *
+ * This runs on the `template_redirect` action.
  */
 function enqueue_scripts() {
 	twentyfourteen_scripts();
