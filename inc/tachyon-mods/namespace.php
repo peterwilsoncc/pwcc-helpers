@@ -433,11 +433,35 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 		return $image;
 	}
 
+	if ( isset( $tachyon_args['crop'] ) ) {
+		list(
+			$crop_start_x,
+			$crop_start_y,
+			$crop_width,
+			$crop_height
+		) = explode( ',', $tachyon_args['crop'] );
+		if ( substr( $crop_width, -2 ) === 'px' ) {
+			$crop_width = (int) substr( $crop_width, 0, -2 );
+		} else {
+			$crop_width = (int) round( $crop_width * 0.01 * $image_meta['width'] );
+		}
+		if ( substr( $crop_height, -2 ) === 'px' ) {
+			$crop_height = (int) substr( $crop_height, 0, -2 );
+		} else {
+			$crop_height = (int) round( $crop_height * 0.01 * $image_meta['height'] );
+		}
+	} else {
+		$crop_width = $image_meta['width'];
+		$crop_height = $image_meta['height'];
+	}
+
 	if ( ! $width && ! $height ) {
-		$width = (int) $image_meta['width'];
-		$height = (int) $image_meta['height'];
-	} elseif ( ! $height ) {
-		$height = (int) ( $image_meta['height'] * ( $width / $image_meta['width'] ) );
+		$width = $crop_width;
+		$height = $crop_height;
+	} elseif ( $width && ! $height ) {
+		$height = (int) ( $crop_height * ( $width / $crop_width ) );
+	} elseif ( ! $width && $height ) {
+		$width = (int) ( $crop_width * ( $height / $crop_height ) );
 	}
 
 	// Still stumped?
@@ -485,7 +509,17 @@ function add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ) {
 		} else {
 			$args['w'] = $srcset_width;
 		}
-		$args = array_merge( $args, array_intersect_key( $tachyon_args, [ 'gravity' => true ] ) );
+		$args = array_merge(
+			$args,
+			array_intersect_key(
+				$tachyon_args,
+				[
+					'gravity' => true,
+					'crop' => true,
+					'crop_strategy' => true,
+				]
+			)
+		);
 
 		$source = [
 			'url'        => add_query_arg( $args, $image_path ),
