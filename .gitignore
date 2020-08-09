@@ -2,7 +2,8 @@
 /.idea
 /.vscode
 
-# Ignore dependency directories.
+# Ignore dependency files and directories.
+/composer.lock
 node_modules/
 vendor/
 
