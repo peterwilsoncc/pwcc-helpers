@@ -7,6 +7,7 @@
  * @copyright   2018 Peter Wilson
  * @license     GPL-2.0+
  */
+
 namespace PWCC\Helpers;
 
 /**
@@ -42,8 +43,8 @@ function bootstrap() {
  *
  * Runs on the filter `backwpup_register_destination`.
  *
- * @param array $registered_destinations
- * @return array
+ * @param array $registered_destinations Registered destinations in Back WP up.
+ * @return array Destinations with s3 removed.
  */
 function remove_s3_conflict( $registered_destinations ) {
 	unset( $registered_destinations['S3'] );

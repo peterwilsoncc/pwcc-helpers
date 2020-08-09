@@ -7,6 +7,7 @@
  * @copyright   2018 Peter Wilson
  * @license     GPL-2.0+
  */
+
 namespace PWCC\Helpers\CavalcadeMods;
 
 const COMPLETED_CLEANUP_HOOK = 'pwcc.helpers.cavalcade-mods.completed';

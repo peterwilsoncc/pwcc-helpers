@@ -7,6 +7,7 @@
  * @copyright   2018 Peter Wilson
  * @license     GPL-2.0+
  */
+
 namespace PWCC\Helpers\TwentyFourteen;
 
 /**
@@ -137,8 +138,9 @@ function wp_push_styles() {
 
 	$push = array_unique( $push );
 
-	// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-	@header( 'Link: ' . implode( ', ', $push ), false );
+	if ( ! headers_sent() ) {
+		header( 'Link: ' . implode( ', ', $push ), false );
+	}
 
 	return $push;
 }
@@ -186,7 +188,7 @@ function wp_push_scripts() {
 			continue;
 		}
 
-		// Only push header scripts
+		// Only push header scripts.
 		if ( $obj->groups[ $handle ] > 0 ) {
 			continue;
 		}
@@ -221,8 +223,9 @@ function wp_push_scripts() {
 
 	$push = array_unique( $push );
 
-	// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-	@header( 'Link: ' . implode( ', ', $push ), false );
+	if ( ! headers_sent() ) {
+		header( 'Link: ' . implode( ', ', $push ), false );
+	}
 
 	return $push;
 }

@@ -7,6 +7,7 @@
  * @copyright   2018 Peter Wilson
  * @license     GPL-2.0+
  */
+
 namespace PWCC\Helpers\TachyonMods;
 
 /**
@@ -51,6 +52,7 @@ function bootstrap() {
  * dimensions, not just their names.
  *
  * Credit: Automattic's Jetpack plugin.
+ *
  * @link https://github.com/Automattic/jetpack/blob/master/class.photon.php
  *
  * @global $wp_additional_image_sizes array Custom registered image sizes.
@@ -99,7 +101,7 @@ function image_sizes() {
 		],
 	];
 
-	// Compatibility mapping as found in wp-includes/media.php
+	// Compatibility mapping as found in wp-includes/media.php.
 	$images['thumbnail'] = $images['thumb'];
 
 	// Merge in `$_wp_additional_image_sizes` if any are set.
@@ -122,8 +124,8 @@ function image_sizes() {
  *
  * @TODO Work out how to name files if crop on upload is reintroduced.
  *
- * @param $data          array The original attachment meta data.
- * @param $attachment_id int   The attachment ID.
+ * @param array $data          The original attachment meta data.
+ * @param int   $attachment_id The attachment ID.
  *
  * @return array The modified attachment data including "new" image sizes.
  */
@@ -160,6 +162,7 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 			continue;
 		}
 		$new_dims = image_resize_dimensions( $orig_w, $orig_h, $crop['width'], $crop['height'], $crop['crop'] );
+
 		/*
 		 * $new_dims = [
 		 *    0 => 0
@@ -178,7 +181,7 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 		$w = (int) $new_dims[4];
 		$h = (int) $new_dims[5];
 
-		// Set crop hash if source crop isn't 0,0,orig_width,orig_height
+		// Set crop hash if source crop isn't 0,0,orig_width,orig_height.
 		$crop_details = "{$orig_w},{$orig_h},{$new_dims[2]},{$new_dims[3]},{$new_dims[6]},{$new_dims[7]}";
 		$crop_hash = '';
 		if ( $crop_details !== "{$orig_w},{$orig_h},0,0,{$orig_w},{$orig_h}" ) {
@@ -252,8 +255,8 @@ function massage_meta_data_for_orientation( array $meta_data ) {
  * Gravity is sometimes reported as east/west before north/south.
  * This causes problems with the service as `eastnorth` is not recognised.
  *
- * @param $tachyon_args array Arguments for calling Tachyon.
- * @param $image        array The image details.
+ * @param array $tachyon_args Arguments for calling Tachyon.
+ * @param array $image        The image details.
  *
  * @return array Modified arguments with gravity corrected.
  */
@@ -346,6 +349,7 @@ function make_content_images_responsive( $content ) {
 		if ( false === strpos( $image, ' srcset=' ) && preg_match( '/wp-image-([0-9]+)/i', $image, $class_id ) && absint( $class_id[1] ) ) {
 			$attachment_id = $class_id[1];
 			$image_data['id'] = $attachment_id;
+
 			/*
 			 * If exactly the same image tag is used more than once, overwrite it.
 			 * All identical tags will be replaced later with 'str_replace()'.

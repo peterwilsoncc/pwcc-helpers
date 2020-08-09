@@ -7,6 +7,7 @@
  * @copyright   2018 Peter Wilson
  * @license     GPL-2.0+
  */
+
 namespace PWCC\Helpers\JetpackFixes;
 
 use Jetpack;
