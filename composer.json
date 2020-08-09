@@ -13,8 +13,10 @@
 		"preferred-install": "dist",
 		"sort-packages": true
 	},
+	"require": {
+		"composer/installers": "^1.9"
+	},
 	"require-dev": {
 		"humanmade/coding-standards": "^1.0"
-	},
-	"require": {}
+	}
 }
