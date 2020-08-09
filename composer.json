@@ -1,0 +1,20 @@
+{
+	"name": "peterwilson/pwcc-helpers",
+	"description": "Helper plugins for my personal website.",
+	"license": "GPL-2.0+",
+	"authors": [
+		{
+			"name": "Peter Wilson",
+			"email": "wilson@peterwilson.cc"
+		}
+	],
+	"type": "wordpress-muplugin",
+	"config": {
+		"preferred-install": "dist",
+		"sort-packages": true
+	},
+	"require-dev": {
+		"humanmade/coding-standards": "^1.0"
+	},
+	"require": {}
+}
