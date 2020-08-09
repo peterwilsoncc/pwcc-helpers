@@ -1,0 +1,37 @@
+# Editor config directories
+/.idea
+/.vscode
+
+# Ignore dependency directories.
+node_modules/
+vendor/
+
+# Ignore log files and databases.
+*.log
+*.sql
+*.sqlite
+
+# Ignore Apple system files.
+._*
+.apdisk
+.AppleDB
+.AppleDesktop
+.AppleDouble
+.DS_Store
+.LSOverride
+Network Trash Folder
+Temporary Items
+
+# Ignore Windows system files.
+[Dd]esktop.ini
+*.cab
+*.lnk
+*.msi
+*.msix
+*.msm
+*.msp
+*.stackdump
+ehthumbs_vista.db
+ehthumbs.db
+Thumbs.db
+Thumbs.db:encryptable
