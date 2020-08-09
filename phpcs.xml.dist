@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ruleset>
+	<!-- Files or directories to check -->
+	<file>.</file>
+
+	<!-- Default arguments -->
+	<arg value="s" />
+	<arg name="extensions" value="php" />
+
+	<!-- Set a minimum PHP version for PHPCompatibility -->
+	<config name="testVersion" value="7.3-" />
+
+	<!-- Use HM Coding Standards -->
+	<rule ref="vendor/humanmade/coding-standards">
+	</rule>
+</ruleset>
