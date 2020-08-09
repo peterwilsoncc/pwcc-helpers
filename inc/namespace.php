@@ -31,7 +31,6 @@ function bootstrap() {
 	JetpackFixes\bootstrap();
 	CavalcadeMods\bootstrap();
 	TachyonMods\bootstrap();
-	TwentyFourteen\bootstrap();
 }
 
 /**
